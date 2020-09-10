@@ -1,5 +1,7 @@
 models/
 weights/
+trainings/
 __pycache__
 test.ipynb
 .ipynb_checkpoints
+*.yaml
