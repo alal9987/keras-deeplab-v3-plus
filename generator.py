@@ -3,12 +3,8 @@ import numpy as np
 import cv2
 from PIL import Image, ImageFile
 import os
+import settings
 
-colors = [
-    [0, 0, 0], # background
-    [255, 0, 255] # crosswalk
-#    [0, 255, 0] # sidewalk + guide_block
-]
 
 def encode_segmap(mask, n_classes):
         """Encode segmentation label images as pascal classes
@@ -24,12 +20,12 @@ def encode_segmap(mask, n_classes):
 
         assert n_classes <= np.iinfo(np.uint8).max, "assert n_classes <= uint8 max"
 
-        for ii, label in enumerate(colors):
+        for ii, label in enumerate(settings.colors):
             label_mask[np.where(np.all(mask == label, axis=-1))[:2]] = ii
 
-        num_nonzero = np.count_nonzero(label_mask)
-        if num_nonzero > 0:
-            print(num_nonzero)
+        #num_nonzero = np.count_nonzero(label_mask)
+        #if num_nonzero > 0:
+        #    print(num_nonzero)
         return label_mask
 
 
@@ -80,8 +76,13 @@ class BatchGenerator(Sequence):
             # brightness
             # color
             # gaussian blur
-            images.append(image)
-            masks.append(mask)
+            images.append(image / 255.0)
+            masks.append(np.array(mask))
+
+        images = np.asarray(images)
+        masks = np.asarray(masks)
+
+        #print('**', images.shape, masks.shape)
 
         return images, masks
 

@@ -4,24 +4,19 @@ from model import Deeplabv3
 from tensorflow.keras.callbacks import TensorBoard, ModelCheckpoint, \
     EarlyStopping, CSVLogger
 from tensorflow.keras.optimizers import Adam
+from keras.backend import one_hot, int_shape, categorical_crossentropy
 from generator import BatchGenerator
 import wandb, yaml
 import numpy as np
+from metrics import *
+import settings
 
 
-W = 142
-H = 80
-n_classes = 2
-batch_size = 2
-epochs = 2
-workers = 2
-use_wandb = False
-DATA_PATH = 'D:/surface_80/'
-CONFIG_PATH = 'config.yaml'
+def cross_entropy_loss(y_true, y_pred):
+    nb_classes = int_shape(y_pred)[-1]
+    y_true = one_hot(tf.to_int32(y_true[:,:,0]), nb_classes+1)[:,:,:-1]
+    return categorical_crossentropy(y_true, y_pred)
 
-# checkpoint settings
-monitor = 'Jaccard'
-mode = 'max'
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -35,18 +30,18 @@ def get_callbacks(model_path: str):
                                write_images=True, embeddings_freq=10)
 
     checkpoint = ModelCheckpoint(model_path, verbose=1,
-                                 monitor = 'val_{}'.format(monitor),
-                                 save_best_only=True, mode=mode)
+                                 monitor = 'val_{}'.format(settings.monitor),
+                                 save_best_only=True, mode=settings.mode)
 
-    early_stopping = EarlyStopping(monitor = 'val_{}'.format(monitor),
-                                   patience=100, verbose=1, mode = mode)
+    early_stopping = EarlyStopping(monitor = 'val_{}'.format(settings.monitor),
+                                   patience=100, verbose=1, mode = settings.mode)
     csv_logger = CSVLogger(
         os.path.join('.', 'trainings', exp_name, 'training_log.csv'))
 
     callbacks = [tensor_board, checkpoint, early_stopping, csv_logger]
 
-    if use_wandb:
-        wb = wandb.keras.WandbCallback(monitor='val_{}'.format(monitor),
+    if settings.use_wandb:
+        wb = wandb.keras.WandbCallback(monitor='val_{}'.format(settings.monitor),
                                        save_model=True)
         callbacks.append(wb)
 
@@ -58,18 +53,18 @@ def main():
     global exp_name
     exp_name = datetime.strftime(datetime.now(), '%y%m%d-%H%M%S')
     opt = {
-        'width': W,
-        'height': H, 
-        'n_classes': n_classes,
-        'batch_size': batch_size,
-        'epochs': epochs,
-        'workers': workers,
-        'wandb': use_wandb,
-        'monitor': monitor,
-        'mode': mode
+        'width': settings.W,
+        'height': settings.H, 
+        'n_classes': settings.n_classes,
+        'batch_size': settings.batch_size,
+        'epochs': settings.epochs,
+        'workers': settings.workers,
+        'wandb': settings.use_wandb,
+        'monitor': settings.monitor,
+        'mode': settings.mode
     }
 
-    if use_wandb:
+    if settings.use_wandb:
         wandb.init(project="seg_keras", name=exp_name, config=opt, #TODO: opt
                    sync_tensorboard=True)
 
@@ -80,44 +75,44 @@ def main():
         os.makedirs(os.path.join('.', 'trainings', exp_name))
 
     config_file_dst = os.path.join('.', 'trainings', exp_name,
-                                   os.path.basename(CONFIG_PATH))
+                                   os.path.basename(settings.CONFIG_PATH))
     with open(config_file_dst, 'w') as f:
         yaml.dump(opt, f, default_flow_style=False, default_style='')
 
-    if use_wandb:
+    if settings.use_wandb:
         wandb.save(config_file_dst)
 
     # Build data generators
-    train_gen = BatchGenerator(DATA_PATH, batch_size, mode='train',
-                               n_classes=2)
-    valid_gen = BatchGenerator(DATA_PATH, batch_size, mode='valid',
-                               n_classes=2)
+    train_gen = BatchGenerator(settings.DATA_PATH, settings.batch_size, mode='train',
+                               n_classes=settings.n_classes)
+    valid_gen = BatchGenerator(settings.DATA_PATH, settings.batch_size, mode='valid',
+                               n_classes=settings.n_classes)
 
     # Initialize a model
-    losses = {}
-    metrics = {}
+    cce = tf.keras.losses.CategoricalCrossentropy()
+    metrics = [Jaccard]
 
     model_path = os.path.join('.', 'trainings', exp_name, exp_name + '.h5')
-    model = Deeplabv3(weights=None, input_shape=(W, H, 3), classes=n_classes)
+    model = Deeplabv3(weights=None, input_shape=(settings.H, settings.W, 3), classes=settings.n_classes)
     model.compile(optimizer = Adam(lr=7e-4, epsilon=1e-8, decay=1e-6), sample_weight_mode = "temporal",
-                  loss = losses, metrics = metrics)
+                  loss = cce, metrics = metrics)
     #model.summary()
 
     print('***', len(train_gen), len(valid_gen))
     # training
     model.fit_generator(train_gen,
                         steps_per_epoch=len(train_gen),
-                        epochs = epochs, verbose=1, 
+                        epochs = settings.epochs, verbose=1, 
                         callbacks = get_callbacks(model_path), 
                         validation_data=valid_gen, 
                         validation_steps=len(valid_gen),
                         max_queue_size=10,
-                        workers=workers, use_multiprocessing=True)
+                        workers=settings.workers, use_multiprocessing=False)
     
     # save trflite model
     new_path = os.path.join('.', 'trainings', exp_name, exp_name + '.tflite')
     convert_to_tflite(model_path, new_path)
-    if use_wandb:
+    if settings.use_wandb:
         wandb.save(os.path.join('trainings', exp_name))
     
 
