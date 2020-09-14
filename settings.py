@@ -9,7 +9,7 @@ DATA_PATH = 'D:/surface_80/'
 CONFIG_PATH = 'config.yaml'
 
 # checkpoint settings
-monitor = 'Jaccard'
+monitor = 'loss'
 mode = 'max'
 
 

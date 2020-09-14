@@ -1,21 +1,17 @@
 import argparse, sys, os
 from datetime import datetime
 from model import Deeplabv3
+import tensorflow as tf
 from tensorflow.keras.callbacks import TensorBoard, ModelCheckpoint, \
     EarlyStopping, CSVLogger
 from tensorflow.keras.optimizers import Adam
-from keras.backend import one_hot, int_shape, categorical_crossentropy
+from tensorflow.keras.losses import CategoricalCrossentropy
 from generator import BatchGenerator
 import wandb, yaml
 import numpy as np
-from metrics import *
+from metrics import Jaccard
+from convert_to_tflite import convert_to_tflite
 import settings
-
-
-def cross_entropy_loss(y_true, y_pred):
-    nb_classes = int_shape(y_pred)[-1]
-    y_true = one_hot(tf.to_int32(y_true[:,:,0]), nb_classes+1)[:,:,:-1]
-    return categorical_crossentropy(y_true, y_pred)
 
 
 def parse_args():
@@ -89,7 +85,7 @@ def main():
                                n_classes=settings.n_classes)
 
     # Initialize a model
-    cce = tf.keras.losses.CategoricalCrossentropy()
+    cce = CategoricalCrossentropy()
     metrics = [Jaccard]
 
     model_path = os.path.join('.', 'trainings', exp_name, exp_name + '.h5')
@@ -98,7 +94,6 @@ def main():
                   loss = cce, metrics = metrics)
     #model.summary()
 
-    print('***', len(train_gen), len(valid_gen))
     # training
     model.fit_generator(train_gen,
                         steps_per_epoch=len(train_gen),

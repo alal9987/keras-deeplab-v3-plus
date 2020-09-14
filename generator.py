@@ -1,4 +1,4 @@
-from tensorflow.keras.utils import Sequence
+from tensorflow.keras.utils import Sequence, to_categorical
 import numpy as np
 import cv2
 from PIL import Image, ImageFile
@@ -26,6 +26,9 @@ def encode_segmap(mask, n_classes):
         #num_nonzero = np.count_nonzero(label_mask)
         #if num_nonzero > 0:
         #    print(num_nonzero)
+
+        label_mask = to_categorical(label_mask, n_classes)
+
         return label_mask
 
 
@@ -101,4 +104,6 @@ class BatchGenerator(Sequence):
 
         new_mask = encode_segmap(image, n_classes)
 
-        return Image.fromarray(new_mask)
+        #return Image.fromarray(new_mask)
+        #print("**", new_mask.shape)
+        return new_mask
