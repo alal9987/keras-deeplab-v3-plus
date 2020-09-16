@@ -7,7 +7,7 @@ from metrics import Jaccard
 
 def convert_to_tflite(model_path: str, new_path: str) -> str:
     model = load_model(model_path, custom_objects={
-        'Jaccard': Jaccard,
+        'Jaccard': Jaccard, 'tf': tf,
     })
 
     converted = tf.lite.TFLiteConverter.from_keras_model(model).convert()

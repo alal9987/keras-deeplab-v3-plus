@@ -5,7 +5,8 @@ import tensorflow as tf
 from tensorflow.keras.callbacks import TensorBoard, ModelCheckpoint, \
     EarlyStopping, CSVLogger
 from tensorflow.keras.optimizers import Adam
-from tensorflow.keras.losses import CategoricalCrossentropy
+from tensorflow.keras.losses import categorical_crossentropy
+from tensorflow.keras.metrics import MeanIoU, categorical_accuracy
 from generator import BatchGenerator
 import wandb, yaml
 import numpy as np
@@ -18,6 +19,13 @@ def parse_args():
     parser = argparse.ArgumentParser()
     args = parser.parse_args()
     return args
+
+
+class MIOU(MeanIoU):
+    # https://stackoverflow.com/questions/60507120/how-to-correctly-use-the-tensorflow-meaniou-metric
+    def update_state(self, y_true, y_pred, sample_weight=None):
+        return super().update_state(tf.argmax(y_true, axis=-1),
+                tf.argmax(y_pred, axis=-1), sample_weight)
 
 
 def get_callbacks(model_path: str):
@@ -85,12 +93,13 @@ def main():
                                n_classes=settings.n_classes)
 
     # Initialize a model
-    cce = CategoricalCrossentropy()
-    metrics = [Jaccard]
+    cce = categorical_crossentropy
+    metrics = [MIOU(settings.n_classes), categorical_accuracy]
 
     model_path = os.path.join('.', 'trainings', exp_name, exp_name + '.h5')
-    model = Deeplabv3(weights=None, input_shape=(settings.H, settings.W, 3), classes=settings.n_classes)
-    model.compile(optimizer = Adam(lr=7e-4, epsilon=1e-8, decay=1e-6), sample_weight_mode = "temporal",
+    model = Deeplabv3(weights=None, input_shape=(settings.H, settings.W, 3), classes=settings.n_classes, activation='softmax')
+    model.summary()
+    model.compile(optimizer=Adam(lr=settings.lr, epsilon=1e-8, decay=1e-6), sample_weight_mode = "temporal",
                   loss = cce, metrics = metrics)
     #model.summary()
 
