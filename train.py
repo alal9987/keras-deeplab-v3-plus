@@ -2,6 +2,7 @@ import argparse, sys, os
 from datetime import datetime
 from model import Deeplabv3
 import tensorflow as tf
+import tensorflow.compat.v1 as tf1
 from tensorflow.keras.callbacks import TensorBoard, ModelCheckpoint, \
     EarlyStopping, CSVLogger
 from tensorflow.keras.optimizers import Adam
@@ -10,22 +11,15 @@ from tensorflow.keras.metrics import MeanIoU, categorical_accuracy
 from generator import BatchGenerator
 import wandb, yaml
 import numpy as np
-from metrics import Jaccard
+from metrics import Jaccard, MIOU
 from convert_to_tflite import convert_to_tflite
 import settings
 
 
-def parse_args():
-    parser = argparse.ArgumentParser()
-    args = parser.parse_args()
-    return args
-
-
-class MIOU(MeanIoU):
-    # https://stackoverflow.com/questions/60507120/how-to-correctly-use-the-tensorflow-meaniou-metric
-    def update_state(self, y_true, y_pred, sample_weight=None):
-        return super().update_state(tf.argmax(y_true, axis=-1),
-                tf.argmax(y_pred, axis=-1), sample_weight)
+def limit_keras_gpu_usage(fraction: float):
+    assert 0. < fraction <= 1.
+    tf_config = tf1.ConfigProto()
+    tf_config.gpu_options.per_process_gpu_memory_fraction = fraction
 
 
 def get_callbacks(model_path: str):
@@ -53,6 +47,8 @@ def get_callbacks(model_path: str):
 
 
 def main():
+    # GPU
+    limit_keras_gpu_usage(settings.gpu_limit)
     # configurations
     global exp_name
     exp_name = datetime.strftime(datetime.now(), '%y%m%d-%H%M%S')
@@ -97,7 +93,9 @@ def main():
     metrics = [MIOU(settings.n_classes), categorical_accuracy]
 
     model_path = os.path.join('.', 'trainings', exp_name, exp_name + '.h5')
-    model = Deeplabv3(weights=None, input_shape=(settings.H, settings.W, 3), classes=settings.n_classes, activation='softmax')
+    model = Deeplabv3(weights=None, input_shape=(settings.H, settings.W, 3),
+                      classes=settings.n_classes, activation='softmax',
+                      backbone='mobilenetv2')
     model.summary()
     model.compile(optimizer=Adam(lr=settings.lr, epsilon=1e-8, decay=1e-6), sample_weight_mode = "temporal",
                   loss = cce, metrics = metrics)

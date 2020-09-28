@@ -47,7 +47,7 @@ class BatchGenerator(Sequence):
         self.affine = affine
 
         #file_list = os.path.join(data_path, f'{mode}_test.txt')
-        file_list = os.path.join(data_path, f'{mode}_80_3.txt')
+        file_list = os.path.join(data_path, f'{mode}.txt')
         with open(file_list, 'r') as f:
             lines = f.read().splitlines()
             for line in lines:

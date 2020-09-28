@@ -2,12 +2,12 @@ import os
 import tensorflow as tf
 import argparse
 from tensorflow.keras.models import load_model
-from metrics import Jaccard
+from metrics import Jaccard, MIOU
 
 
 def convert_to_tflite(model_path: str, new_path: str) -> str:
     model = load_model(model_path, custom_objects={
-        'Jaccard': Jaccard, 'tf': tf,
+        'Jaccard': Jaccard, 'tf': tf, 'MIOU': MIOU, 'relu6': tf.nn.relu6,
     })
 
     converted = tf.lite.TFLiteConverter.from_keras_model(model).convert()

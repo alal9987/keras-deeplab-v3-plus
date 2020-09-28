@@ -29,3 +29,10 @@ def Jaccard(y_true, y_pred):
     legal_labels = ~tf.math.is_nan(iou) if _IS_TF_2 else ~tf.debugging.is_nan(iou)
     iou = iou[legal_labels] if _IS_TF_2 else tf.gather(iou, indices=tf.where(legal_labels))
     return K.mean(iou)
+
+
+class MIOU(tf.keras.metrics.MeanIoU):
+    # https://stackoverflow.com/questions/60507120/how-to-correctly-use-the-tensorflow-meaniou-metric
+    def update_state(self, y_true, y_pred, sample_weight=None):
+        return super().update_state(tf.argmax(y_true, axis=-1),
+                tf.argmax(y_pred, axis=-1), sample_weight)

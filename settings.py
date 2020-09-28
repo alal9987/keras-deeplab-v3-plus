@@ -1,27 +1,22 @@
-W = 142
-H = 80
-n_classes = 2
-batch_size = 32
+# W = 142
+W = 240
+H = 320
+batch_size = 16
 epochs = 100
 workers = 4
-lr = 1e-3
+lr = 1e-4
 use_wandb = True
-DATA_PATH = 'dataset'
+gpu_limit = 0.6
+DATA_PATH = 'surface_320_240'
 CONFIG_PATH = 'config.yaml'
 
 # checkpoint settings
 monitor = 'loss'
 mode = 'max'
 
-
-colors = [
-    [0, 0, 0], # background
-    [255, 0, 255] # crosswalk
-#    [0, 255, 0] # sidewalk + guide_block
-]
-n_classes = 3
+n_classes = 2
 colors = [
     [0, 0, 0], # background
     [255, 0, 255], # crosswalk
-    [0, 255, 0] # sidewalk + guide_block
+#    [0, 255, 0] # sidewalk + guide_block
 ]
