@@ -9,6 +9,7 @@ use_wandb = True
 gpu_limit = 0.6
 DATA_PATH = 'surface_320_240'
 CONFIG_PATH = 'config.yaml'
+TEST_MODE = False
 
 # checkpoint settings
 monitor = 'loss'

@@ -167,7 +167,7 @@ def _make_divisible(v, divisor, min_value=None):
 
 
 def _inverted_res_block(inputs, expansion, stride, alpha, filters, block_id, skip_connection, rate=1):
-    print('inputs.shape', inputs.shape)
+    #print('inputs.shape', inputs.shape)
     in_channels = inputs.shape[-1] # .value //   inputs._keras_shape[-1]
     pointwise_conv_filters = int(filters * alpha)
     pointwise_filters = _make_divisible(pointwise_conv_filters, 8)
