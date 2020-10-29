@@ -21,6 +21,9 @@ def encode_segmap(mask, n_classes):
         assert n_classes <= np.iinfo(np.uint8).max, "assert n_classes <= uint8 max"
 
         for ii, label in enumerate(settings.colors):
+            # colors: 2, [0,255,0]
+            if ii == 2:
+                ii = 0
             label_mask[np.where(np.all(mask == label, axis=-1))[:2]] = ii
 
         #num_nonzero = np.count_nonzero(label_mask)

@@ -97,8 +97,8 @@ def main():
                       classes=settings.n_classes, activation='softmax',
                       backbone='mobilenetv2')
     model.summary()
-    model.compile(optimizer=Adam(lr=settings.lr, epsilon=1e-8, decay=1e-6), sample_weight_mode = "temporal",
-                  loss = cce, metrics = metrics)
+    model.compile(optimizer=Adam(lr=settings.lr, epsilon=1e-8, decay=1e-6),
+                  sample_weight_mode = "temporal", loss = cce, metrics = metrics)
     #model.summary()
 
     # training
