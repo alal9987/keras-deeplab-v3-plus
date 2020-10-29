@@ -53,6 +53,9 @@ class BatchGenerator(Sequence):
         file_list = os.path.join(data_path, f'{mode}.txt')
         with open(file_list, 'r') as f:
             lines = f.read().splitlines()
+            if settings.TEST_MODE:
+                n = int(len(lines) / 1000)
+                lines = lines[:n]
             for line in lines:
                 image, mask = line.split(',')
                 image = os.path.join(data_path, image)

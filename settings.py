@@ -12,6 +12,7 @@ gpu_limit = 0.9
 DATA_PATH = 'surface_80_60'
 # DATA_PATH = 'surface_320_240'
 CONFIG_PATH = 'config.yaml'
+TEST_MODE = False
 
 # checkpoint settings
 monitor = 'miou'
